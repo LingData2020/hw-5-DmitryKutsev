@@ -1,0 +1,272 @@
+---
+title: "hw5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#install.packages("tidyverse")
+library(tidyverse)
+#install.packages('lsr')
+library(lsr)
+install.packages('vcd')
+library(vcd)
+```
+
+
+### 1.0 
+Read the data from file to the variable `shva`.
+```{r 1.0}
+shva <- read.delim("https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/data/duryagin_ReductionRussian.txt")
+```
+
+
+### 1.1 
+Scatterplot `f1` and `f2` using `ggplot()`. 
+Design it to look like the [following](https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/img/duryagin1.png).
+```{r 1.1}
+ggplot(data=shva, aes(x=f1, y=f2)) + 
+  geom_point() +
+  labs(x = "f1",
+       y = "f2",
+       title = "f1 + f2 redused and stressed")
+```
+
+
+
+### 1.3 
+Calculate Pearson's correlation of `f1` and `f2` (all data)
+```{r 1.3}
+cor.test(shva$f1, shva$f2 )
+```
+
+### 
+1.4 Calculate Pearson's correlation of `f1` and `f2` for each vowel
+```{r, message = TRUE}
+#vowls <- table(shva$f1, shva$f2, shva$vowel)
+#vowls <- data.frame(shva$f1, shva$f2, shva$vowel) 
+#cor.test(vowls$shva.f1, vowls$shva.f2)???????
+cor.test(formula = ~ f1 + f2,
+         data = shva,
+         subset = vowel)
+  
+```
+
+## 2 Linear regressions
+
+### 2.1.1 
+Use the linear regression model to predict `f2` by `f1`.
+```{r 2.1.1}
+fit1 <- lm(data = shva, f1 ~ f2)
+summary(fit1)
+
+```
+
+
+### 2.1.2 
+Write down the equation for f2 using coefficients from the model (e.g. $y =  b + kx$)
+```{r 2.1.2}
+print('f1 = 1678.9 + 0.087f2')
+
+```
+
+
+
+
+
+### 2.1.3 
+Provide the adjusted R$^2$
+```{r 2.1.3}
+summary(fit1)$adj.r.squared
+```
+
+
+
+### 2.1.4 
+Add the regression line in the scatterplot 1.1.
+```{r 2.1.4}
+ggplot(data = shva, aes(x = f2, y = f1)) + 
+  geom_point() +
+  labs(x = "f2 score",
+       y = "f1 score",
+       title = "2.1.4 ") +
+  geom_point(aes(y = fit1.predict), shape = 1, color ="red") + # Add the predicted values
+  geom_segment(aes(xend = f2, yend = fit1.predict)) +
+  theme_bw()
+```
+
+
+
+
+
+### 2.1.5 
+Make a scatter plot for `f1` and `f2` grouped by vowels. 
+Use `ggplot()` and `facet_wrap()`.
+
+```{r 2.1.5}
+vowels <- shva %>%
+  group_by(vowel) 
+
+ggplot(data=vowels, aes(x=f1, y=f2)) + 
+  geom_point() +
+  facet_wrap(~vowels$vowel)
+
+```
+
+
+
+
+### 2.2.1 
+Use the linear regression model to predict `f2` by `f1` and `vowel`.
+```{r 2.2.1}
+fit2 <- lm(data = shva, f2 ~ f1 + vowel)
+summary(fit2)
+
+```
+
+### 2.2.2 
+What is the intercept of the model?
+```{r 2.2.2}
+fit2$coefficients[1]
+```
+
+### 2.2.3 
+Provide the adjusted R$^2$
+```{r 2.2.3}
+summary(fit2)$adj.r.squared
+#Adjusted R-squared in the bottom of summary
+```
+
+### 2.2.4 
+```
+Write down your general conclusions about the relationship between `f1`, `f2`, and `vowels`.
+
+```
+В этой ситуации мы отвергаем  нулевую гипотезу, так как p-value очень мало. А R-squared меньше 50%, что означает, что зависимость между f2, f1 и vowel слабая.
+
+
+
+### 3.0 
+Read the data from file to the variable `d_caus`.
+```{r 3.0}
+d_caus <- read.csv("https://raw.githubusercontent.com/agricolamz/2018-MAG_R_course/master/data/dutch_causatives.csv")
+summary(d_caus)
+```
+
+
+### 3.1 
+We are going to test whether the association between `Aux` and other categorical variables (`Aux` ~ `CrSem`, `Aux` ~ `CeSem`, etc) is statistically significant. The assiciation with which variable should be analysed using Fisher's Exact Test and not using Pearson's Chi-squared Test? Is this association statistically significant?
+```{r 3.1}
+#Попробуем сделать тест для всех переменных:
+chisq.test(d_caus$Aux, d_caus$CrSem)
+chisq.test(d_caus$Aux, d_caus$CeSem)
+chisq.test(d_caus$Aux, d_caus$CdEvSem)
+chisq.test(d_caus$Aux, d_caus$Country)
+chisq.test(d_caus$Aux, d_caus$Domain)
+chisq.test(d_caus$Aux, d_caus$CeSynt)
+chisq.test(d_caus$Aux, d_caus$EPTrans)
+
+#Чтобы проанализировать эти связи, может понадобиться тест Фишера:
+fisher.test(d_caus$Aux, d_caus$CeSynt)
+
+```
+
+
+
+
+### 3.2. 
+Test the hypothesis that `Aux` and `EPTrans` are not independent with the help of Pearson's Chi-squared Test. 
+```{r 3.2}
+ind_test <- chisq.test(d_caus$Aux, d_caus$EPTrans)
+ind_test 
+```
+
+### 3.3 
+Provide expected frequencies for Pearson's Chi-squared Test of `Aux` and `EPTrans` variables.
+```{r 3.3}
+ind_test$expected
+```
+
+### 3.4. 
+Calculate the odds ratio for observed frequencies of `Aux` and `EPTrans`
+For 2×2 contigency table
+$$\begin{matrix}
+a & b \\
+c & d
+\end{matrix}
+$$
+one can find *odds ratio* as $(a/c)/(b/d)$.
+
+```{r 3.4}
+a = ind_test$observed[1, 1]
+b = ind_test$observed[1, 2]
+c = ind_test$observed[2, 1]
+d = ind_test$observed[2, 2]
+odds_ratio = (a/c) / (b/d)
+odds_ratio
+```
+
+### 3.4.1 
+Find odds ratio for expected frequencies of `Aux` and `EPTrans`
+
+```{r 3.4.1}
+a = ind_test$expected[1, 1]
+b = ind_test$expected[1, 2]
+c = ind_test$expected[2, 1]
+d = ind_test$expected[2, 2]
+odds_ratio = (a/c)/(b/d)
+odds_ratio
+```
+What can you say about odds ratio of expected frequencies for arbitrary data?
+Отношение равно 1, значит переменные считаются взаимно независимыми.
+
+### 3.5 
+Calculate effect size for this test using Cramer's V (phi).
+```{r 3.5}
+cramersV(ind_test$observed)
+```
+
+### 3.6. 
+Report the results of independence test using the following template:
+```
+We have not found a significant association between variables f2, f1 and vowel (p < 0.001).  The odds of `Aux` and `EPTrans` were equal. Effect size is small (Cramer's V =  0.1691587).
+```
+
+
+### 3.7 
+Visualize the distribution using mosaic plot.
+Use `mosaic()` function from `vcd` library.
+```{r 3.7}
+mosaic(~ EPTrans + Aux, data=d_caus, shade=TRUE, legend=TRUE)
+```
+
+Below is an example of how to use mosaic() with three variables.
+```{r 3.7.1}
+# mosaic(~ Aux + CrSem + Country, data=d_caus, shade=TRUE, legend=TRUE)
+```
+
+### 3.8 
+Why is it not recommended to run multiple Chisq tests of independence on different variables within your dataset whithout adjusting for the multiplicity? (i.e. just testing all the pairs of variables one by one)  
+
+```
+ 
+Случаи, когда нулевую гипотезу отвергают, в то время, когда они истинна, увеличивается по мере увеличения числа сравнений, что приводит к ложным выводам относительно гипотезы.
+```
+
+### 3.9 
+Provide a short text (300 words) describing the hypothesis of this study and the results of your analysis.
+```{r 3.9}
+"Набор данных о двух конкурирующих конструкциях с * doen * и * laten *, взятых из газетных корпусов. Данные включают в себя 500 наблюдений по следующим 7 переменным:
+* `Aux` - глаголы `doen` и `laten`
+* `CrSem` - семантический класс причины(кто совершает действие: `Anim` (одушевленный) и `Inanim` (неодушевленный)
+* `CeSem` - семантический класс Causee(над кем совершают действие): « Anim »(одушевленный) и« Inanim »(неодушевленный)
+* `CdEvSem` - семантическая область вызванного события, выраженная в результате воздействующего предиката:«Ment»(ментальный) и «NonMent»(например, физический или социальный)
+* `CeSynt` - синтаксический статус Causee(над чем совершают действие): фактор с уровнями` Clause`, `Impl` (неявный, не выраженный),` NP` (существительное), `PP` (предлог)
+* `EPTrans` - транзитивность или непереходность воздействующего предиката, фактор с двумя уровнями` Tr` и `Intr`
+Мы использовали тест Хи квадрат(Pearson's Chi-squared Test) и тест Фишера(Fisher's Exact Test) для Aux и CeSynt, а так же отношение шансов, которое показало, что переменные считаются взаимно независимыми.
+
+```
+
+
+
+
+
